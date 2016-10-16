@@ -9,6 +9,7 @@ import java.util.Stack;
 import java.util.Arrays;
 import java.time.*;
 import java.lang.Thread;
+import java.lang.Integer;
 
 public class javoScheduler{
 
@@ -514,17 +515,22 @@ private static int getScheduleRemainingSize(){
 private static int getSchedulerSecondsRemaining(){
 
 	try {
-		int secondsRemaining = -1;
+		long secondsRemaining = -1;
 
 		Statement st = databaseConn.createStatement();
 		ResultSet rs = st.executeQuery("SELECT sum(audio.length_smpl) FROM sustschedule INNER JOIN audio ON sustschedule.audioid = audio.id");
 		
 		while ( rs.next() ){
 			// Add the audioid to the advert list
-			secondsRemaining = rs.getInt("sum");
+			secondsRemaining = rs.getLong("sum");
 		}
 		rs.close();
 		st.close();
+
+		if (secondsRemaining > Integer.MAX_VALUE) {
+			logToFile("[ERROR] Integer overflow detected, defaulting to " + Integer.MAX_VALUE + ".");
+			secondsRemaining = Integer.MAX_VALUE;
+		}
 
 		return (int) (secondsRemaining / SAMPLE_RATE);
 
