@@ -545,7 +545,7 @@ private static int getScheduleRemainingSize(){
 
 
 
-private static int getSchedulerSecondsRemaining(){
+private static int getSchedulerSecondsRemaining() throws FileNotFoundException {
 
 	try {
 		long secondsRemaining = -1;
