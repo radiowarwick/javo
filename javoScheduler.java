@@ -39,6 +39,9 @@ static Connection databaseConn = null;
 static String logFile = "0";
 static int currentDate = 0;
 
+/*   OVER-SCHEDULE RECOVERY   */
+static int maxScheduled = 100;
+
 /////////////////////////////////////////////////////////////////////////////////
 //									Entry point							  	   //
 /////////////////////////////////////////////////////////////////////////////////
@@ -83,6 +86,15 @@ private static void addToScheduleUntilTime(int timeToAddUntil) throws FileNotFou
     // Calculate the current stop time
     int currentStopTime = (int) getCurrentSongFinishTime() + getSchedulerSecondsRemaining();
 
+    if (getScheduleRemainingSize() > maxScheduled) {
+    	// Output overschedule warning
+    	logToFile("[ERROR] Over-schedule detected, " + getScheduleRemainingSize() + " items found, requesting queue to be cleared.");
+    	// Clear the queue
+		clearSchedule();
+    	// Reset current stop time
+    	currentStopTime = (int) getCurrentSongFinishTime() + getSchedulerSecondsRemaining();
+    }
+
     System.out.println("addToScheduleUntilTime: Scheduling from " + currentStopTime + " til " + timeToAddUntil);
     logToFile("[TIME] Scheduling from " + epochConverter(currentStopTime) + " until " + epochConverter(timeToAddUntil));
 
@@ -93,7 +105,7 @@ private static void addToScheduleUntilTime(int timeToAddUntil) throws FileNotFou
     logToFile("[TIME] Schedule length remaining: " + Integer.toString(remainingTimeHours) + ":" + Integer.toString(remainingTimeMinutes) + ":" + Integer.toString(remainingTimeSecounds) + ".");
     
     // Keep adding to schedule until we've added enough
-    while(currentStopTime < timeToAddUntil){
+    while(currentStopTime < timeToAddUntil) {
 
         // LocalDateTime t = new LocalDateTime((int) currentStopTime);
         LocalDateTime thetime = LocalDateTime.ofEpochSecond((long) currentStopTime, 0, ZoneOffset.of("Z"));
@@ -422,6 +434,27 @@ private static void addAudioToSchedule(Track track) throws FileNotFoundException
 	} catch (SQLException exception){
 		System.err.println(exception.getMessage());
 	}
+
+}
+
+
+
+
+private static void clearSchedule() throws FileNotFoundException {
+
+	try {
+
+		Statement st = databaseConn.createStatement();
+		st.executeQuery("TRUNCATE sustschedule");
+		
+		
+		st.close();
+
+	} catch (SQLException exception){
+		System.err.println(exception.getMessage());
+	}
+
+	logToFile("[AUDIO] Schedule clear requested. Now has " + getScheduleRemainingSize() + " tracks in queue.");
 
 }
 
